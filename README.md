@@ -1,2 +1,56 @@
-# currency-tracker-app
-Данная система представляет собой автоматизированный сервис для мониторинга курсов валют, интегрированный с официальным API Центрального Банка РФ. Проект демонстрирует полный цикл интеграции: от автоматического сбора данных из внешнего источника до их визуализации в пользовательском интерфейсе.
+# Currency Tracker Mod
+
+**Интеграция данных ЦБ РФ в систему учета**
+
+Легковесный модуль для автоматического сбора курсов валют и их визуализации. Проект выполнен в рамках учебной практики.
+⚡️ Key Features
+
+    Auto-Sync: Ежедневное получение данных через API ЦБ РФ.
+
+    Persistence: Надежное хранение истории в SQLite.
+
+    Analytics: Динамические графики курса на базе Chart.js.
+
+    Quality Control: Код проверен линтером Ruff.
+
+🛠 Tech Stack
+
+    Core: Python 3.12, FastAPI.
+
+    Database: SQLite + Alembic (migrations).
+
+    Integration: HTTPX, APScheduler.
+
+    Frontend: Tailwind CSS, FlyonUI, Chart.js.
+
+📊 Integration Flow
+
+Согласно регламенту, ниже представлена схема взаимодействия компонентов:
+Фрагмент кода
+
+sequenceDiagram
+    participant Worker as Backend (Task)
+    participant API as API ЦБ РФ
+    participant DB as SQLite
+    participant UI as Frontend (Chart.js)
+
+    Note over Worker, API: Background Task
+    Worker->>API: Запрос актуальных курсов
+    API-->>Worker: XML/JSON Response
+    Worker->>DB: Запись в ExchangeRates
+
+    Note over UI, DB: User View
+    UI->>DB: Запрос данных через API
+    DB-->>UI: History Data
+    UI->>UI: Отрисовка графика
+
+🚀 Quick Start
+Bash
+
+# Настройка окружения
+python -m venv venv
+source venv/bin/activate  # venv\Scripts\activate для Win
+
+# Установка и запуск
+pip install -r requirements.txt
+uvicorn main:app --reload
