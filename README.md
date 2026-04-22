@@ -48,9 +48,7 @@ sequenceDiagram
 Bash
 
 # Настройка окружения
-python -m venv venv
-source venv/bin/activate  # venv\Scripts\activate для Win
+-
 
 # Установка и запуск
-pip install -r requirements.txt
-uvicorn main:app --reload
+-
