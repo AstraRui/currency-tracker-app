@@ -1,10 +1,127 @@
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Currency Tracker (CBR)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+      .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+      select, input, button { padding: 8px 10px; }
+      #status { color: #444; }
+      canvas { max-width: 900px; }
+    </style>
+  </head>
+  <body>
+    <h2>Currency Tracker (ЦБ РФ)</h2>
+    <div class="row">
+      <label>Валюта:
+        <select id="code"></select>
+      </label>
+      <label>Дней:
+        <input id="days" type="number" min="1" max="3650" value="30" />
+      </label>
+      <button id="reload">Обновить график</button>
+      <button id="sync">Синхронизировать сегодня</button>
+      <span id="status"></span>
+    </div>
+    <canvas id="chart" height="120"></canvas>
+
+    <script>
+      const statusEl = document.getElementById("status");
+      const codeEl = document.getElementById("code");
+      const daysEl = document.getElementById("days");
+
+      let chart;
+
+      function setStatus(text) {
+        statusEl.textContent = text || "";
+      }
+
+      async function loadCodes() {
+        const r = await fetch("/api/codes");
+        const j = await r.json();
+        const codes = (j.codes || []);
+        const preferred = ["USD", "EUR", "CNY", "GBP", "KZT"];
+        const ordered = [...new Set([...preferred.filter(c => codes.includes(c)), ...codes])];
+        codeEl.innerHTML = ordered.map(c => `<option value="${c}">${c}</option>`).join("");
+        if (!codeEl.value && ordered.length) codeEl.value = ordered[0];
+      }
+
+      async function loadRates() {
+        const code = codeEl.value || "USD";
+        const days = Number(daysEl.value || 30);
+        setStatus("Загружаю данные...");
+        const r = await fetch(`/api/rates/${encodeURIComponent(code)}?days=${days}`);
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          throw new Error(err.detail || "Ошибка API");
+        }
+        return await r.json();
+      }
+
+      function renderChart(payload) {
+        const labels = payload.items.map(x => x.date);
+        const data = payload.items.map(x => x.value);
+        const title = `${payload.char_code} — ${payload.name} (за ${payload.days} дней)`;
+
+        const ctx = document.getElementById("chart").getContext("2d");
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [{
+              label: "Value (RUB)",
+              data,
+              borderWidth: 2,
+              tension: 0.25,
+            }]
+          },
+          options: {
+            plugins: {
+              title: { display: true, text: title }
+            },
+            scales: {
+              y: { title: { display: true, text: "RUB" } }
+            }
+          }
+        });
+      }
+
+      async function refresh() {
+        try {
+          const payload = await loadRates();
+          renderChart(payload);
+          setStatus("Готово");
+        } catch (e) {
+          setStatus(String(e.message || e));
+        }
+      }
+
+      document.getElementById("reload").addEventListener("click", refresh);
+      document.getElementById("sync").addEventListener("click", async () => {
+        try {
+          setStatus("Синхронизация...");
+          const r = await fetch("/api/sync", { method: "POST" });
+          const j = await r.json();
+          setStatus(j.synced ? `Синхронизировано: ${j.date}` : `Без изменений: ${j.date}`);
+          await loadCodes();
+          await refresh();
+        } catch (e) {
+          setStatus(String(e.message || e));
+        }
+      });
+
+      (async () => {
+        try {
+          await loadCodes();
+          await refresh();
+        } catch (e) {
+          setStatus(String(e.message || e));
+        }
+      })();
+    </script>
+  </body>
 </html>

@@ -45,10 +45,22 @@ sequenceDiagram
     UI->>UI: Отрисовка графика
 
 🚀 Quick Start
-Bash
+Windows PowerShell (через `uv`)
 
-# Настройка окружения
--
+```powershell
+# Установка зависимостей (создаст .venv)
+uv sync
 
-# Установка и запуск
--
+# Запуск dev-сервера
+uv run uvicorn app.main:app --reload
+```
+
+Откройте в браузере `http://127.0.0.1:8000/`.
+
+Минимальные API:
+
+- `GET /api/codes` — список валютных кодов, которые есть в базе
+- `GET /api/rates/{CODE}?days=30` — точки для графика
+- `POST /api/sync` — синхронизировать курсы “на сегодня”
+
+Примечание: текущий минимальный скелет использует `sqlite3` и `requests` (без Alembic/APScheduler)
