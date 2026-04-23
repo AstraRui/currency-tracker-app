@@ -27,17 +27,20 @@ scheduler: BackgroundScheduler | None = None
 
 
 def sync_today() -> dict:
-    today = date.today()
-    if has_rates_for_date(DB_PATH, today):
-        return {"status": "ok", "synced": False, "date": today.isoformat(), "reason": "already in db"}
-
     rates = fetch_daily_rates()
+    if not rates:
+        raise HTTPException(status_code=502, detail="CBR returned no rates")
+
+    rates_date = rates[0].date
+    if has_rates_for_date(DB_PATH, date.fromisoformat(rates_date)):
+        return {"status": "ok", "synced": False, "date": rates_date, "reason": "already in db"}
+
     rows = [
         RateRow(date=r.date, char_code=r.char_code, nominal=r.nominal, value=r.value, name=r.name)
         for r in rates
     ]
     count = upsert_rates(DB_PATH, rows)
-    return {"status": "ok", "synced": True, "date": today.isoformat(), "rows_upserted": count}
+    return {"status": "ok", "synced": True, "date": rates_date, "rows_upserted": count}
 
 def _safe_sync_today() -> None:
     try:

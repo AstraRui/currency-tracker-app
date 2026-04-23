@@ -1,15 +1,67 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="corporate">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Currency Tracker (CBR)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+      /*
+        Minimal theme bridge.
+        When FlyonUI/Tailwind is added later, these variable names can map 1:1 to its theme tokens.
+      */
+      :root {
+        --base-100: #ffffff;
+        --base-200: #f3f4f6;
+        --base-content: #111827;
+        --primary: #1d4ed8;
+        --primary-content: #ffffff;
+        --border: rgba(17, 24, 39, 0.14);
+      }
+
+      html[data-theme="corporate"] {
+        --base-100: #ffffff;
+        --base-200: #f3f4f6;
+        --base-content: #0f172a;
+        --primary: #1d4ed8;
+        --primary-content: #ffffff;
+        --border: rgba(15, 23, 42, 0.16);
+      }
+
+      html[data-theme="luxury"] {
+        --base-100: #0b0f19;
+        --base-200: #0f1629;
+        --base-content: #e5e7eb;
+        --primary: #d4af37;
+        --primary-content: #0b0f19;
+        --border: rgba(229, 231, 235, 0.12);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        margin: 24px;
+        background: var(--base-100);
+        color: var(--base-content);
+      }
       .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-      select, input, button { padding: 8px 10px; }
-      #status { color: #444; }
+      select, input, button {
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--base-100);
+        color: var(--base-content);
+      }
+      button {
+        background: var(--base-200);
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--primary);
+        border-color: transparent;
+        color: var(--primary-content);
+      }
+      #status { color: color-mix(in srgb, var(--base-content) 70%, transparent); }
       canvas { max-width: 900px; }
     </style>
   </head>
@@ -23,17 +75,31 @@
         <input id="days" type="number" min="1" max="3650" value="30" />
       </label>
       <button id="reload">Обновить график</button>
-      <button id="sync">Синхронизировать сегодня</button>
+      <button id="sync" class="primary">Синхронизировать сегодня</button>
+      <button id="theme">Тема: corporate</button>
       <span id="status"></span>
     </div>
     <canvas id="chart" height="120"></canvas>
 
     <script>
+      const rootEl = document.documentElement;
+      const themeBtn = document.getElementById("theme");
       const statusEl = document.getElementById("status");
       const codeEl = document.getElementById("code");
       const daysEl = document.getElementById("days");
 
       let chart;
+
+      function getTheme() {
+        return rootEl.getAttribute("data-theme") || "corporate";
+      }
+
+      function setTheme(name) {
+        const next = (name === "luxury") ? "luxury" : "corporate";
+        rootEl.setAttribute("data-theme", next);
+        themeBtn.textContent = `Тема: ${next}`;
+        try { localStorage.setItem("theme", next); } catch {}
+      }
 
       function setStatus(text) {
         statusEl.textContent = text || "";
@@ -68,6 +134,12 @@
 
         const ctx = document.getElementById("chart").getContext("2d");
         if (chart) chart.destroy();
+        const theme = getTheme();
+        const computed = getComputedStyle(rootEl);
+        const baseContent = computed.getPropertyValue("--base-content").trim() || "#111827";
+        const primary = computed.getPropertyValue("--primary").trim() || "#1d4ed8";
+        const grid = theme === "luxury" ? "rgba(229, 231, 235, 0.12)" : "rgba(17, 24, 39, 0.12)";
+
         chart = new Chart(ctx, {
           type: "line",
           data: {
@@ -77,14 +149,18 @@
               data,
               borderWidth: 2,
               tension: 0.25,
+              borderColor: primary,
+              pointBackgroundColor: primary,
             }]
           },
           options: {
             plugins: {
-              title: { display: true, text: title }
+              title: { display: true, text: title, color: baseContent },
+              legend: { labels: { color: baseContent } }
             },
             scales: {
-              y: { title: { display: true, text: "RUB" } }
+              x: { ticks: { color: baseContent }, grid: { color: grid } },
+              y: { ticks: { color: baseContent }, grid: { color: grid }, title: { display: true, text: "RUB", color: baseContent } }
             }
           }
         });
@@ -116,6 +192,9 @@
 
       (async () => {
         try {
+          const saved = (() => { try { return localStorage.getItem("theme"); } catch { return null; } })();
+          setTheme(saved || "corporate");
+          themeBtn.addEventListener("click", () => setTheme(getTheme() === "corporate" ? "luxury" : "corporate"));
           await loadCodes();
           await refresh();
         } catch (e) {
