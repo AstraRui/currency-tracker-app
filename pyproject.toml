@@ -5,8 +5,22 @@ description = "Minimal currency tracker (CBR + SQLite + Chart.js)"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "apscheduler>=3.11.0",
     "fastapi>=0.136.0",
     "lxml>=6.1.0",
     "requests>=2.33.1",
+    "ruff>=0.12.0",
     "uvicorn>=0.45.0",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+

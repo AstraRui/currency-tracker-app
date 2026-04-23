@@ -3,18 +3,27 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
 from app.cbr_client import fetch_daily_rates
-from app.database import RateRow, get_available_codes, get_rates, has_rates_for_date, init_db, upsert_rates
-
+from app.database import (
+    RateRow,
+    get_available_codes,
+    get_rates,
+    has_rates_for_date,
+    init_db,
+    upsert_rates,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = BASE_DIR / "data" / "currency.sqlite3"
 TEMPLATE_PATH = BASE_DIR / "templates" / "index.html"
 
 app = FastAPI(title="Currency Tracker", version="0.1.0")
+
+scheduler: BackgroundScheduler | None = None
 
 
 def sync_today() -> dict:
@@ -30,14 +39,35 @@ def sync_today() -> dict:
     count = upsert_rates(DB_PATH, rows)
     return {"status": "ok", "synced": True, "date": today.isoformat(), "rows_upserted": count}
 
+def _safe_sync_today() -> None:
+    try:
+        init_db(DB_PATH)
+        sync_today()
+    except Exception:
+        pass
+
 
 @app.on_event("startup")
 def _startup() -> None:
+    global scheduler
+
     init_db(DB_PATH)
     try:
         sync_today()
     except Exception:
         pass
+
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(_safe_sync_today, "cron", hour=0, minute=5, id="daily_cbr_sync", replace_existing=True)
+    scheduler.start()
+
+
+@app.on_event("shutdown")
+def _shutdown() -> None:
+    global scheduler
+    if scheduler is not None:
+        scheduler.shutdown(wait=False)
+        scheduler = None
 
 
 @app.get("/", response_class=HTMLResponse)

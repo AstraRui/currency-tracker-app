@@ -6,7 +6,6 @@ from datetime import date, datetime
 import requests
 from lxml import etree
 
-
 CBR_DAILY_URL = "https://www.cbr.ru/scripts/XML_daily.asp"
 
 

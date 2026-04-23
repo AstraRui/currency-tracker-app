@@ -19,7 +19,7 @@
 
     Database: SQLite + Alembic (migrations).
 
-    Integration: HTTPX, APScheduler.
+    Integration: requests, APScheduler.
 
     Frontend: Tailwind CSS, FlyonUI, Chart.js.
 
