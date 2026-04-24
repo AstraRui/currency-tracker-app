@@ -107,6 +107,7 @@
         rootEl.setAttribute("data-theme", next);
         if (themeToggleEl) themeToggleEl.checked = next === "dark";
         try { localStorage.setItem("theme", next); } catch {}
+        applyChartTheme();
       }
 
       function setStatus(text) {
@@ -198,16 +199,11 @@
       function renderChart(payload) {
         const labels = payload.items.map(x => x.date);
         const data = payload.items.map(x => per1Rub(payload, x.value));
-        const nominal = Number(payload.nominal || 1);
         const title = `${payload.char_code} — ${payload.name} (за ${payload.days} дней) • в пересчёте за 1`;
 
         const ctx = document.getElementById("chart").getContext("2d");
         if (chart) chart.destroy();
-        const theme = getTheme();
-        const computed = getComputedStyle(rootEl);
-        const baseContent = computed.getPropertyValue("--color-base-content").trim() || (theme === "dark" ? "#e5e7eb" : "#111827");
-        const primary = computed.getPropertyValue("--color-primary").trim() || "#1d4ed8";
-        const grid = theme === "dark" ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.12)";
+        const { baseContent, primary, grid } = getChartColors();
 
         chart = new Chart(ctx, {
           type: "line",
@@ -233,6 +229,33 @@
             }
           }
         });
+      }
+
+      function getChartColors() {
+        const theme = getTheme();
+        const computed = getComputedStyle(rootEl);
+        const baseContent = computed.getPropertyValue("--color-base-content").trim()
+          || (theme === "dark" ? "#ffffff" : "#111827");
+        const primary = computed.getPropertyValue("--color-primary").trim() || "#1d4ed8";
+        const grid = theme === "dark" ? "rgba(229, 231, 235, 0.22)" : "rgba(17, 24, 39, 0.12)";
+        return { baseContent, primary, grid };
+      }
+
+      function applyChartTheme() {
+        if (!chart) return;
+        const { baseContent, primary, grid } = getChartColors();
+        chart.data.datasets.forEach(ds => {
+          ds.borderColor = primary;
+          ds.pointBackgroundColor = primary;
+        });
+        if (chart.options?.plugins?.title) chart.options.plugins.title.color = baseContent;
+        if (chart.options?.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = baseContent;
+        if (chart.options?.scales?.x?.ticks) chart.options.scales.x.ticks.color = baseContent;
+        if (chart.options?.scales?.x?.grid) chart.options.scales.x.grid.color = grid;
+        if (chart.options?.scales?.y?.ticks) chart.options.scales.y.ticks.color = baseContent;
+        if (chart.options?.scales?.y?.grid) chart.options.scales.y.grid.color = grid;
+        if (chart.options?.scales?.y?.title) chart.options.scales.y.title.color = baseContent;
+        chart.update();
       }
 
       async function refresh() {
