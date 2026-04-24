@@ -1,89 +1,97 @@
 <!doctype html>
-<html lang="ru" data-theme="corporate">
+<html lang="ru" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Currency Tracker (CBR)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    <style>
-      /*
-        Minimal theme bridge.
-        When FlyonUI/Tailwind is added later, these variable names can map 1:1 to its theme tokens.
-      */
-      :root {
-        --base-100: #ffffff;
-        --base-200: #f3f4f6;
-        --base-content: #111827;
-        --primary: #1d4ed8;
-        --primary-content: #ffffff;
-        --border: rgba(17, 24, 39, 0.14);
-      }
-
-      html[data-theme="corporate"] {
-        --base-100: #ffffff;
-        --base-200: #f3f4f6;
-        --base-content: #0f172a;
-        --primary: #1d4ed8;
-        --primary-content: #ffffff;
-        --border: rgba(15, 23, 42, 0.16);
-      }
-
-      html[data-theme="luxury"] {
-        --base-100: #0b0f19;
-        --base-200: #0f1629;
-        --base-content: #e5e7eb;
-        --primary: #d4af37;
-        --primary-content: #0b0f19;
-        --border: rgba(229, 231, 235, 0.12);
-      }
-
-      * { box-sizing: border-box; }
-      body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        margin: 24px;
-        background: var(--base-100);
-        color: var(--base-content);
-      }
-      .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-      select, input, button {
-        padding: 8px 10px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: var(--base-100);
-        color: var(--base-content);
-      }
-      button {
-        background: var(--base-200);
-        cursor: pointer;
-      }
-      button.primary {
-        background: var(--primary);
-        border-color: transparent;
-        color: var(--primary-content);
-      }
-      #status { color: color-mix(in srgb, var(--base-content) 70%, transparent); }
-      canvas { max-width: 900px; }
-    </style>
+    <link rel="stylesheet" href="/static/app.css" />
   </head>
-  <body>
-    <h2>Currency Tracker (ЦБ РФ)</h2>
-    <div class="row">
-      <label>Валюта:
-        <select id="code"></select>
-      </label>
-      <label>Дней:
-        <input id="days" type="number" min="1" max="3650" value="30" />
-      </label>
-      <button id="reload">Обновить график</button>
-      <button id="sync" class="primary">Синхронизировать сегодня</button>
-      <button id="theme">Тема: corporate</button>
-      <span id="status"></span>
-    </div>
-    <canvas id="chart" height="120"></canvas>
+  <body class="min-h-screen bg-base-100 text-base-content">
+    <main class="mx-auto w-full max-w-5xl p-4 md:p-6">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">Currency Tracker</h1>
+          <p class="text-sm text-base-content/70">Данные ЦБ РФ, курс к рублю</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-base-content/70">White</span>
+          <input id="themeToggle" type="checkbox" class="toggle toggle-primary" aria-label="Switch theme" />
+          <span class="text-sm text-base-content/70">Dark</span>
+        </div>
+      </div>
+
+      <section class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <button id="cardUSD" type="button" class="card card-border text-left hover:shadow-sm transition-shadow">
+          <div class="card-body gap-2">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="card-title text-base">USD / RUB</h2>
+              <span id="cardUSD_delta" class="badge badge-soft">…</span>
+            </div>
+            <div class="text-3xl font-semibold tabular-nums" id="cardUSD_value">…</div>
+            <div class="text-xs text-base-content/70" id="cardUSD_meta">…</div>
+          </div>
+        </button>
+
+        <button id="cardEUR" type="button" class="card card-border text-left hover:shadow-sm transition-shadow">
+          <div class="card-body gap-2">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="card-title text-base">EUR / RUB</h2>
+              <span id="cardEUR_delta" class="badge badge-soft">…</span>
+            </div>
+            <div class="text-3xl font-semibold tabular-nums" id="cardEUR_value">…</div>
+            <div class="text-xs text-base-content/70" id="cardEUR_meta">…</div>
+          </div>
+        </button>
+
+        <button id="cardCNY" type="button" class="card card-border text-left hover:shadow-sm transition-shadow">
+          <div class="card-body gap-2">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="card-title text-base">CNY / RUB</h2>
+              <span id="cardCNY_delta" class="badge badge-soft">…</span>
+            </div>
+            <div class="text-3xl font-semibold tabular-nums" id="cardCNY_value">…</div>
+            <div class="text-xs text-base-content/70" id="cardCNY_meta">…</div>
+          </div>
+        </button>
+      </section>
+
+      <section class="mt-6 card card-border">
+        <div class="card-body gap-4">
+          <div class="flex flex-wrap items-end gap-3">
+            <label class="form-control w-full sm:w-auto">
+              <div class="label">
+                <span class="label-text">Валюта</span>
+              </div>
+              <select id="code" class="select select-bordered w-full sm:w-44"></select>
+            </label>
+
+            <label class="form-control w-full sm:w-auto">
+              <div class="label">
+                <span class="label-text">Дней</span>
+              </div>
+              <input id="days" class="input input-bordered w-full sm:w-28" type="number" min="1" max="3650" value="30" />
+            </label>
+
+            <div class="flex flex-wrap gap-2">
+              <button id="reload" class="btn btn-ghost">Обновить</button>
+              <button id="sync" class="btn btn-primary">Синхронизировать сегодня</button>
+            </div>
+
+            <div class="flex-1"></div>
+            <div id="status" class="text-sm text-base-content/70"></div>
+          </div>
+
+          <div class="w-full">
+            <canvas id="chart" height="120"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
 
     <script>
       const rootEl = document.documentElement;
-      const themeBtn = document.getElementById("theme");
+      const themeToggleEl = document.getElementById("themeToggle");
       const statusEl = document.getElementById("status");
       const codeEl = document.getElementById("code");
       const daysEl = document.getElementById("days");
@@ -91,18 +99,30 @@
       let chart;
 
       function getTheme() {
-        return rootEl.getAttribute("data-theme") || "corporate";
+        return rootEl.getAttribute("data-theme") || "light";
       }
 
       function setTheme(name) {
-        const next = (name === "luxury") ? "luxury" : "corporate";
+        const next = (name === "dark") ? "dark" : "light";
         rootEl.setAttribute("data-theme", next);
-        themeBtn.textContent = `Тема: ${next}`;
+        if (themeToggleEl) themeToggleEl.checked = next === "dark";
         try { localStorage.setItem("theme", next); } catch {}
       }
 
       function setStatus(text) {
         statusEl.textContent = text || "";
+      }
+
+      function formatRub(x) {
+        if (!Number.isFinite(x)) return "—";
+        return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 4 }).format(x);
+      }
+
+      function formatDelta(delta) {
+        if (!Number.isFinite(delta)) return "—";
+        const sign = delta > 0 ? "+" : "";
+        const txt = sign + new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 4 }).format(delta);
+        return `${txt} ₽`;
       }
 
       async function loadCodes() {
@@ -127,18 +147,67 @@
         return await r.json();
       }
 
+      async function loadQuote(code) {
+        const r = await fetch(`/api/rates/${encodeURIComponent(code)}?days=2`);
+        if (!r.ok) return null;
+        return await r.json();
+      }
+
+      function per1Rub(payload, value) {
+        const nominal = Number(payload?.nominal || 1);
+        const v = Number(value);
+        if (!Number.isFinite(v) || !Number.isFinite(nominal) || nominal <= 0) return NaN;
+        return v / nominal;
+      }
+
+      function renderCard(prefix, code, payload) {
+        const valueEl = document.getElementById(`${prefix}_value`);
+        const deltaEl = document.getElementById(`${prefix}_delta`);
+        const metaEl = document.getElementById(`${prefix}_meta`);
+
+        if (!payload || !payload.items || payload.items.length === 0) {
+          if (valueEl) valueEl.textContent = "—";
+          if (deltaEl) deltaEl.textContent = "нет данных";
+          if (metaEl) metaEl.textContent = "";
+          return;
+        }
+
+        const items = payload.items;
+        const last = items[items.length - 1];
+        const prev = items.length >= 2 ? items[items.length - 2] : null;
+        const lastPer1 = per1Rub(payload, last.value);
+        const prevPer1 = prev ? per1Rub(payload, prev.value) : NaN;
+        const delta = Number.isFinite(lastPer1) && Number.isFinite(prevPer1) ? (lastPer1 - prevPer1) : NaN;
+
+        if (valueEl) valueEl.textContent = formatRub(lastPer1);
+        if (deltaEl) {
+          const arrow = Number.isFinite(delta) ? (delta > 0 ? "▲ " : (delta < 0 ? "▼ " : "• ")) : "";
+          deltaEl.textContent = arrow + formatDelta(delta);
+          deltaEl.classList.toggle("badge-success", Number.isFinite(delta) && delta > 0);
+          deltaEl.classList.toggle("badge-error", Number.isFinite(delta) && delta < 0);
+          deltaEl.classList.toggle("badge-neutral", Number.isFinite(delta) && delta === 0);
+        }
+        if (metaEl) {
+          const nominal = Number(payload.nominal || 1);
+          const raw = Number(last.value);
+          const rawTxt = (Number.isFinite(raw) && Number.isFinite(nominal)) ? `${formatRub(raw)} за ${nominal} ${code}` : "";
+          metaEl.textContent = `${payload.name || code} • ${last.date}${rawTxt ? " • " + rawTxt : ""}`;
+        }
+      }
+
       function renderChart(payload) {
         const labels = payload.items.map(x => x.date);
-        const data = payload.items.map(x => x.value);
-        const title = `${payload.char_code} — ${payload.name} (за ${payload.days} дней)`;
+        const data = payload.items.map(x => per1Rub(payload, x.value));
+        const nominal = Number(payload.nominal || 1);
+        const title = `${payload.char_code} — ${payload.name} (за ${payload.days} дней) • в пересчёте за 1`;
 
         const ctx = document.getElementById("chart").getContext("2d");
         if (chart) chart.destroy();
         const theme = getTheme();
         const computed = getComputedStyle(rootEl);
-        const baseContent = computed.getPropertyValue("--base-content").trim() || "#111827";
-        const primary = computed.getPropertyValue("--primary").trim() || "#1d4ed8";
-        const grid = theme === "luxury" ? "rgba(229, 231, 235, 0.12)" : "rgba(17, 24, 39, 0.12)";
+        const baseContent = computed.getPropertyValue("--color-base-content").trim() || (theme === "dark" ? "#e5e7eb" : "#111827");
+        const primary = computed.getPropertyValue("--color-primary").trim() || "#1d4ed8";
+        const grid = theme === "dark" ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.12)";
 
         chart = new Chart(ctx, {
           type: "line",
@@ -160,7 +229,7 @@
             },
             scales: {
               x: { ticks: { color: baseContent }, grid: { color: grid } },
-              y: { ticks: { color: baseContent }, grid: { color: grid }, title: { display: true, text: "RUB", color: baseContent } }
+              y: { ticks: { color: baseContent }, grid: { color: grid }, title: { display: true, text: `RUB за 1 ${payload.char_code}`, color: baseContent } }
             }
           }
         });
@@ -176,6 +245,29 @@
         }
       }
 
+      async function refreshHeroCards() {
+        try {
+          const [usd, eur, cny] = await Promise.all([
+            loadQuote("USD"),
+            loadQuote("EUR"),
+            loadQuote("CNY"),
+          ]);
+          renderCard("cardUSD", "USD", usd);
+          renderCard("cardEUR", "EUR", eur);
+          renderCard("cardCNY", "CNY", cny);
+        } catch {
+        }
+      }
+
+      function wireCard(cardId, code) {
+        const el = document.getElementById(cardId);
+        if (!el) return;
+        el.addEventListener("click", async () => {
+          codeEl.value = code;
+          await refresh();
+        });
+      }
+
       document.getElementById("reload").addEventListener("click", refresh);
       document.getElementById("sync").addEventListener("click", async () => {
         try {
@@ -184,6 +276,7 @@
           const j = await r.json();
           setStatus(j.synced ? `Синхронизировано: ${j.date}` : `Без изменений: ${j.date}`);
           await loadCodes();
+          await refreshHeroCards();
           await refresh();
         } catch (e) {
           setStatus(String(e.message || e));
@@ -193,9 +286,15 @@
       (async () => {
         try {
           const saved = (() => { try { return localStorage.getItem("theme"); } catch { return null; } })();
-          setTheme(saved || "corporate");
-          themeBtn.addEventListener("click", () => setTheme(getTheme() === "corporate" ? "luxury" : "corporate"));
+          setTheme(saved || "light");
+          if (themeToggleEl) {
+            themeToggleEl.addEventListener("change", () => setTheme(themeToggleEl.checked ? "dark" : "light"));
+          }
           await loadCodes();
+          wireCard("cardUSD", "USD");
+          wireCard("cardEUR", "EUR");
+          wireCard("cardCNY", "CNY");
+          await refreshHeroCards();
           await refresh();
         } catch (e) {
           setStatus(String(e.message || e));

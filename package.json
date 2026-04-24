@@ -1,0 +1,17 @@
+{
+  "name": "currency-tracker-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:css": "npx @tailwindcss/cli -i ./frontend/app.css -o ./static/app.css",
+    "watch:css": "npx @tailwindcss/cli -i ./frontend/app.css -o ./static/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.4",
+    "tailwindcss": "^4.2.4"
+  },
+  "dependencies": {
+    "flyonui": "^2.4.1"
+  }
+}
+

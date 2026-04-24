@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@plugin "flyonui";
+
+@import "../node_modules/flyonui/variants.css";
+@source "../node_modules/flyonui/dist/index.js";
+
+/* Banking palette overrides */
+@layer base {
+  /* Light: green primary */
+  :where(:root), :root:has(input.theme-controller[value=light]:checked), [data-theme=light] {
+    --color-base-100: #ffffff;
+    --color-base-200: #f3f4f6;
+    --color-base-300: #e5e7eb;
+    --color-base-content: #0f172a;
+
+    --color-primary: #0f766e;
+    --color-primary-content: #ffffff;
+
+    --color-accent: #16a34a;
+    --color-accent-content: #052e16;
+
+    --color-success: #16a34a;
+    --color-success-content: #052e16;
+  }
+
+  /* Dark: gold primary */
+  :root:has(input.theme-controller[value=dark]:checked), [data-theme=dark] {
+    --color-base-100: #0b0f19;
+    --color-base-200: #0f1629;
+    --color-base-300: #131d33;
+    --color-base-content: #e5e7eb;
+
+    --color-primary: #d4af37;
+    --color-primary-content: #0b0f19;
+
+    --color-accent: #f5d06f;
+    --color-accent-content: #0b0f19;
+  }
+}
+

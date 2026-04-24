@@ -51,6 +51,12 @@ Windows PowerShell (через `uv`)
 # Установка зависимостей (создаст .venv)
 uv sync
 
+# Установка фронтенд-зависимостей (Tailwind + FlyonUI)
+npm install
+
+# Сборка CSS в ./static/app.css
+npm run build:css
+
 # Запуск dev-сервера
 uv run uvicorn app.main:app --reload
 ```

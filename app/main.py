@@ -6,6 +6,7 @@ from pathlib import Path
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.cbr_client import fetch_daily_rates
 from app.database import (
@@ -20,8 +21,10 @@ from app.database import (
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = BASE_DIR / "data" / "currency.sqlite3"
 TEMPLATE_PATH = BASE_DIR / "templates" / "index.html"
+STATIC_DIR = BASE_DIR / "static"
 
 app = FastAPI(title="Currency Tracker", version="0.1.0")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 scheduler: BackgroundScheduler | None = None
 
