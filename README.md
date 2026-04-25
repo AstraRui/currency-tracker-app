@@ -26,8 +26,7 @@
 📊 Integration Flow
 
 Согласно регламенту, ниже представлена схема взаимодействия компонентов:
-Фрагмент кода
-
+```mermaid
 sequenceDiagram
     participant Worker as Backend (Task)
     participant API as API ЦБ РФ
@@ -36,13 +35,15 @@ sequenceDiagram
 
     Note over Worker, API: Background Task
     Worker->>API: Запрос актуальных курсов
-    API-->>Worker: XML/JSON Response
-    Worker->>DB: Запись в ExchangeRates
+    API-->>Worker: XML Response
+    Worker->>DB: Запись в exchange_rates
+    Worker->>DB: Запись метаданных (app_meta)
 
     Note over UI, DB: User View
     UI->>DB: Запрос данных через API
     DB-->>UI: History Data
     UI->>UI: Отрисовка графика
+```
 
 🚀 Quick Start
 Windows PowerShell (через `uv`)
@@ -66,7 +67,12 @@ uv run uvicorn app.main:app --reload
 Минимальные API:
 
 - `GET /api/codes` — список валютных кодов, которые есть в базе
+- `GET /api/stats` — сводка “Сегодня” (последняя дата в БД, количество валют, статус синхронизации)
+- `GET /api/favorites` — данные для таблицы “Избранное” (курс, ∆ день, ∆ 7д, спарклайн)
 - `GET /api/rates/{CODE}?days=30` — точки для графика
 - `POST /api/sync` — синхронизировать курсы “на сегодня”
 
-Примечание: текущий минимальный скелет использует `sqlite3` и `requests` (без Alembic/APScheduler)
+Миграции:
+
+- Alembic настроен в `alembic.ini`, миграции лежат в `alembic/versions/`.
+- Для применения миграций: `uv run alembic upgrade head`

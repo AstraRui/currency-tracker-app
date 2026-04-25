@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 
@@ -42,6 +42,65 @@ def init_db(db_path: Path) -> None:
             "CREATE INDEX IF NOT EXISTS idx_exchange_rates_code_date "
             "ON exchange_rates(char_code, date)"
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_meta (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+            """
+        )
+
+
+def set_meta(db_path: Path, key: str, value: str) -> None:
+    with _connect(db_path) as conn:
+        conn.execute(
+            """
+            INSERT INTO app_meta(key, value)
+            VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value
+            """,
+            (key, value),
+        )
+
+
+def get_meta(db_path: Path, key: str) -> str | None:
+    with _connect(db_path) as conn:
+        row = conn.execute("SELECT value FROM app_meta WHERE key = ?", (key,)).fetchone()
+        return str(row["value"]) if row else None
+
+
+def touch_last_sync(db_path: Path, *, ok: bool, detail: str | None = None) -> None:
+    now = datetime.now(tz=UTC).replace(microsecond=0).isoformat()
+    set_meta(db_path, "last_sync_at", now)
+    set_meta(db_path, "last_sync_ok", "1" if ok else "0")
+    if detail is not None:
+        set_meta(db_path, "last_sync_detail", detail)
+
+
+def get_stats(db_path: Path) -> dict:
+    with _connect(db_path) as conn:
+        row = conn.execute("SELECT COUNT(DISTINCT char_code) AS c FROM exchange_rates").fetchone()
+        currency_count = int(row["c"]) if row else 0
+
+        row = conn.execute("SELECT MAX(date) AS d FROM exchange_rates").fetchone()
+        latest_date = str(row["d"]) if row and row["d"] is not None else None
+
+    last_sync_at = get_meta(db_path, "last_sync_at")
+    last_sync_ok_raw = get_meta(db_path, "last_sync_ok")
+    last_sync_ok = None if last_sync_ok_raw is None else (last_sync_ok_raw == "1")
+    last_sync_detail = get_meta(db_path, "last_sync_detail")
+
+    return {
+        "latest_date": latest_date,
+        "currency_count": currency_count,
+        "source": {"name": "CBR", "url": "https://www.cbr.ru/"},
+        "last_sync": {
+            "at": last_sync_at,
+            "ok": last_sync_ok,
+            "detail": last_sync_detail,
+        },
+    }
 
 
 def upsert_rates(db_path: Path, rates: list[RateRow]) -> int:

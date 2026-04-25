@@ -26,12 +26,8 @@ def _parse_cbr_date(s: str) -> str:
 def _parse_ru_decimal(s: str) -> float:
     return float(s.replace(",", "."))
 
-
-def fetch_daily_rates(timeout_s: float = 10.0) -> list[CbrRate]:
-    resp = requests.get(CBR_DAILY_URL, timeout=timeout_s)
-    resp.raise_for_status()
-
-    root = etree.fromstring(resp.content)
+def _parse_rates_xml(content: bytes) -> list[CbrRate]:
+    root = etree.fromstring(content)
     rates_date = _parse_cbr_date(root.attrib.get("Date", date.today().strftime("%d.%m.%Y")))
 
     out: list[CbrRate] = []
@@ -52,3 +48,19 @@ def fetch_daily_rates(timeout_s: float = 10.0) -> list[CbrRate]:
             )
         )
     return out
+
+
+def fetch_daily_rates(timeout_s: float = 10.0) -> list[CbrRate]:
+    resp = requests.get(CBR_DAILY_URL, timeout=timeout_s)
+    resp.raise_for_status()
+    return _parse_rates_xml(resp.content)
+
+
+def fetch_daily_rates_for(d: date, timeout_s: float = 10.0) -> list[CbrRate]:
+    resp = requests.get(
+        CBR_DAILY_URL,
+        params={"date_req": d.strftime("%d/%m/%Y")},
+        timeout=timeout_s,
+    )
+    resp.raise_for_status()
+    return _parse_rates_xml(resp.content)
