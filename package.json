@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:css": "npx @tailwindcss/cli -i ./frontend/app.css -o ./static/app.css",
+    "build:css": "npx @tailwindcss/cli -i ./frontend/app.css -o ./static/app.css --minify",
     "watch:css": "npx @tailwindcss/cli -i ./frontend/app.css -o ./static/app.css --watch"
   },
   "devDependencies": {

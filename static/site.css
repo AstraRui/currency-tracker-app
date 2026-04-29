@@ -1,0 +1,106 @@
+html[data-theme="light"] {
+  --nav-accent: #16a34a;
+  --nav-accent-soft: rgba(22, 163, 74, 0.12);
+}
+
+html[data-theme="dark"] {
+  --nav-accent: #f59e0b;
+  --nav-accent-soft: rgba(245, 158, 11, 0.14);
+}
+
+.nav-accent {
+  color: var(--nav-accent);
+}
+
+.nav-accent-ring {
+  outline: 2px solid var(--nav-accent-soft);
+  outline-offset: 2px;
+}
+
+.popular-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.popular-right {
+  flex: 0 0 auto;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.edge-shell {
+  width: 100%;
+  max-width: 112rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(0.75rem, 2vw, 1.5rem);
+  padding-right: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+.edge-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.main-pane {
+  min-width: 0;
+}
+
+.chart-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.chart-wrap canvas {
+  display: block;
+  width: 100% !important;
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .edge-grid {
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .edge-grid {
+    grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr) minmax(15rem, 20rem);
+    gap: 1.25rem;
+  }
+
+  .edge-banner {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .edge-banner-left {
+    justify-self: start;
+  }
+
+  .edge-banner-right {
+    justify-self: end;
+  }
+}
+
+@media (min-width: 1536px) {
+  .edge-grid {
+    grid-template-columns: 22rem minmax(0, 1fr) 22rem;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .popular-item {
+    gap: 0.5rem;
+  }
+
+  .popular-right {
+    max-width: 48%;
+  }
+}
