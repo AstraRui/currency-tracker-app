@@ -22,6 +22,11 @@
 Бэкенд обращается к API ЦБ РФ, получает и обрабатывает курсы валют, сохраняет их в SQLite.  
 Затем подготовленные данные возвращаются на фронтенд для отображения карточек валют, таблиц и графика динамики курса.
 
+Для ускорения интерфейса в API используется краткоживущий in-memory cache:
+- `/api/favorites` кэшируется на 30 секунд;
+- `/api/rates/{char_code}?days=N` кэшируется на 15 секунд;
+- после `POST /api/sync` кэш очищается, чтобы фронтенд получил актуальные данные.
+
 ## 4. ИНСТРУКЦИЯ ПО ЗАПУСКУ
 
 Шаг 1: Клонирование репозитория командой:
@@ -48,11 +53,21 @@ uv run uvicorn app.main:app --reload
 
 После запуска откройте в браузере `http://127.0.0.1:8000/`.
 
+## Структура проекта
+
+- `app/main.py` - точка входа приложения (инициализация FastAPI, scheduler, подключение роутов).
+- `app/api/routes.py` - HTTP-эндпоинты и обработчики API.
+- `app/core/sync_service.py` - бизнес-логика синхронизации и backfill курсов.
+- `app/core/config.py` - пути и базовые настройки приложения.
+- `app/schema.py` - SQLAlchemy metadata для Alembic.
+- `app/database.py` - работа с SQLite (query, upsert, stats, meta).
+
 ## 5. ФУНКЦИОНАЛЬНЫЕ ВОЗМОЖНОСТИ
 
 - Получение актуальных курсов валют из API ЦБ РФ и синхронизация в локальную базу.
 - Построение графика изменений курса выбранной валюты за заданное количество дней.
 - Отображение популярных валют и дневных изменений с удобным интерфейсом.
+- Ускоренная выдача данных для графика и блока популярных валют за счет короткого серверного кэша.
 
 ## 6. СКРИНШОТ ПРИЛОЖЕНИЯ
 
@@ -129,8 +144,17 @@ sequenceDiagram
 
     U->>UI: Выбирает валюту и период
     UI->>API: GET /api/rates/{CODE}?days=N
-    API->>DB: SELECT rates by code/date
-    DB-->>API: История значений
+    alt Есть свежий cache (15s)
+        API-->>UI: JSON points (from cache)
+    else Cache miss
+        API->>DB: SELECT rates by code/date
+        DB-->>API: История значений
+        alt История отсутствует и days > 4
+            API->>CBR: Backfill недостающих дат (до 14 дней)
+            CBR-->>API: Курсы валют (XML)
+            API->>DB: UPSERT backfill rows
+        end
+    end
     API-->>UI: JSON points
     UI-->>U: Отрисовка графика Chart.js
 ```
@@ -174,11 +198,22 @@ def fetch_daily_rates(timeout_s: float = 10.0) -> list[CbrRate]:
 
 ```python
 def sync_today() -> dict:
-    rates = fetch_daily_rates()
-    if not rates:
-        raise HTTPException(status_code=502, detail="CBR returned no rates")
-    rows = [RateRow(date=r.date, char_code=r.char_code, nominal=r.nominal, value=r.value, name=r.name) for r in rates]
-    count = upsert_rates(DB_PATH, rows)
-    return {"status": "ok", "synced": True, "date": rates[0].date, "rows_upserted": count}
+    try:
+        rates = fetch_daily_rates()
+        if not rates:
+            raise HTTPException(status_code=502, detail="CBR returned no rates")
+        rates_date = rates[0].date
+        if has_rates_for_date(DB_PATH, date.fromisoformat(rates_date)):
+            touch_last_sync(DB_PATH, ok=True, detail="already in db")
+            return {"status": "ok", "synced": False, "date": rates_date, "reason": "already in db"}
+        rows = [RateRow(date=r.date, char_code=r.char_code, nominal=r.nominal, value=r.value, name=r.name) for r in rates]
+        count = upsert_rates(DB_PATH, rows)
+        touch_last_sync(DB_PATH, ok=True, detail=f"rows_upserted={count}")
+        return {"status": "ok", "synced": True, "date": rates_date, "rows_upserted": count}
+    except HTTPException as exc:
+        touch_last_sync(DB_PATH, ok=False, detail=f"HTTP {exc.status_code}: {exc.detail}")
+        raise
 ```
+
+Источник реализации: `app/core/sync_service.py`
 </details>

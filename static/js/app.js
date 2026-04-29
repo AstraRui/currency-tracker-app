@@ -107,6 +107,10 @@ async function refreshFavorites() {
   if (!favoritesLeftEl || !favoritesRightEl) return;
   try {
     const r = await fetch("/api/favorites?limit=10&spark_days=14");
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail || "Ошибка загрузки популярных валют.");
+    }
     const j = await r.json();
     const items = j.items || [];
     if (!items.length) {
@@ -295,12 +299,19 @@ document.getElementById("sync").addEventListener("click", async () => {
     showAlert("");
     setStatus("Синхронизация...");
     const r = await fetch("/api/sync", { method: "POST" });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail || "Ошибка синхронизации.");
+    }
     const j = await r.json();
-    setStatus(j.synced ? `Синхронизировано: ${j.date}` : `Без изменений: ${j.date}`);
+    const syncStatus = j.synced ? `Синхронизировано: ${j.date}` : `Без изменений: ${j.date}`;
+    setStatus(syncStatus);
     await loadCodes();
     await refreshFavorites();
     await refreshHeroCards();
     await refresh();
+    // refresh() clears transient status text; restore sync result for user feedback.
+    setStatus(syncStatus);
   } catch (e) {
     const msg = String(e.message || e);
     setStatus(msg);

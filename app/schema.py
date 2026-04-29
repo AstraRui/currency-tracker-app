@@ -20,4 +20,3 @@ app_meta = Table(
     Column("key", String, primary_key=True, nullable=False),
     Column("value", String, nullable=False),
 )
-
