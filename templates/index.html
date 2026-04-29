@@ -34,21 +34,45 @@
         white-space: nowrap;
       }
       .edge-shell {
+        width: 100%;
+        max-width: 112rem;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: clamp(0.75rem, 2vw, 1.5rem);
+        padding-right: clamp(0.75rem, 2vw, 1.5rem);
+      }
+      .edge-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+        align-items: start;
+      }
+      .main-pane {
+        min-width: 0;
+      }
+      .chart-wrap {
+        width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+      }
+      .chart-wrap canvas {
+        display: block;
+        width: 100% !important;
         max-width: 100%;
       }
-      @media (min-width: 1280px) {
-        .edge-shell {
-          padding-left: 1.5rem;
-          padding-right: 1.5rem;
-        }
+      @media (min-width: 768px) {
         .edge-grid {
-          display: grid;
-          grid-template-columns: 22rem minmax(0, 1fr) 22rem;
-          gap: 1rem;
-          align-items: start;
+          gap: 1.25rem;
+        }
+      }
+      @media (min-width: 1280px) {
+        .edge-grid {
+          grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr) minmax(15rem, 20rem);
+          gap: 1.25rem;
         }
         .edge-banner {
-          width: 22rem;
+          width: 100%;
+          min-width: 0;
         }
         .edge-banner-left {
           justify-self: start;
@@ -59,17 +83,23 @@
       }
       @media (min-width: 1536px) {
         .edge-grid {
-          grid-template-columns: 24rem minmax(0, 56rem) 24rem;
+          grid-template-columns: 22rem minmax(0, 1fr) 22rem;
+          gap: 1.5rem;
         }
-        .edge-banner {
-          width: 24rem;
+      }
+      @media (max-width: 639px) {
+        .popular-item {
+          gap: 0.5rem;
+        }
+        .popular-right {
+          max-width: 48%;
         }
       }
     </style>
   </head>
   <body class="min-h-screen bg-base-100 text-base-content overflow-x-hidden">
     <div class="navbar bg-base-100 border-b border-base-200/60 py-1">
-      <div class="edge-shell mx-auto w-full px-4 md:px-6">
+      <div class="edge-shell">
         <div class="flex w-full items-center justify-between">
           <div class="flex items-center gap-3">
             <a class="btn btn-ghost px-2 text-base font-semibold tracking-tight" href="/">
@@ -88,7 +118,7 @@
       </div>
     </div>
 
-    <main class="edge-shell mx-auto w-full p-4 md:p-6">
+    <main class="edge-shell py-4 md:py-6">
       <section class="mt-6 grid grid-cols-1 gap-4 xl:mt-10">
         <div class="edge-grid">
         <aside class="card card-border edge-banner edge-banner-left order-2 xl:order-1">
@@ -100,7 +130,7 @@
           </div>
         </aside>
 
-        <section class="order-1 xl:order-2 max-w-5xl mx-auto w-full">
+        <section class="main-pane order-1 xl:order-2 max-w-5xl mx-auto w-full">
           <div id="emptyHint" class="alert alert-warning mb-3 hidden">
             <span class="font-medium">База пуста.</span>
             <span class="text-base-content/80">Нажмите “Синхронизировать сегодня”, чтобы загрузить курсы.</span>
@@ -171,7 +201,7 @@
                 <div id="status" class="text-sm text-base-content/70"></div>
               </div>
 
-              <div class="w-full">
+              <div class="chart-wrap">
                 <canvas id="chart" height="120"></canvas>
               </div>
             </div>
