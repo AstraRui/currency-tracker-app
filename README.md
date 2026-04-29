@@ -1,78 +1,60 @@
-# Currency Tracker Mod
+# Currency Tracker
 
-**Интеграция данных ЦБ РФ в систему учета**
+**Тема практики:** Интеграция данных ЦБ РФ в систему учета  
+**Номер и название темы:** Интеграция валютных данных ЦБ РФ в систему учета.
+**Группа:**  9-3 РПО 2023/1
 
-Легковесный модуль для автоматического сбора курсов валют и их визуализации. Проект выполнен в рамках учебной практики.
-⚡️ Key Features
+## 1. СОСТАВ КОМАНДЫ
 
-    Auto-Sync: Ежедневное получение данных через API ЦБ РФ.
+- Павел Якоби (Роль: DevOps/Архитектор, Backend, Frontend) - ответственность: архитектура проекта, серверная логика, интеграция с API ЦБ РФ, работа с базой данных, интерфейс, визуализация и сборка.
 
-    Persistence: Надежное хранение истории в SQLite.
+## 2. ТЕХНИЧЕСКИЙ СТЕК
 
-    Analytics: Динамические графики курса на базе Chart.js.
+- Язык программирования: Python 3.12, JavaScript
+- Бэкенд фреймворк: FastAPI
+- База данных: SQLite
+- Внешние интеграции: API Центрального банка РФ (XML Daily)
+- Ключевые библиотеки: requests, APScheduler, Alembic, Pydantic, Chart.js, Tailwind CSS, FlyonUI
 
-    Quality Control: Код проверен линтером Ruff.
+## 3. ЛОГИКА РАБОТЫ И ИНТЕГРАЦИИ
 
-🛠 Tech Stack
+Фронтенд запрашивает данные у бэкенда через REST API.  
+Бэкенд обращается к API ЦБ РФ, получает и обрабатывает курсы валют, сохраняет их в SQLite.  
+Затем подготовленные данные возвращаются на фронтенд для отображения карточек валют, таблиц и графика динамики курса.
 
-    Core: Python 3.12, FastAPI.
+## 4. ИНСТРУКЦИЯ ПО ЗАПУСКУ
 
-    Database: SQLite + Alembic (migrations).
-
-    Integration: requests, APScheduler.
-
-    Frontend: Tailwind CSS, FlyonUI, Chart.js.
-
-📊 Integration Flow
-
-Согласно регламенту, ниже представлена схема взаимодействия компонентов:
-```mermaid
-sequenceDiagram
-    participant Worker as Backend (Task)
-    participant API as API ЦБ РФ
-    participant DB as SQLite
-    participant UI as Frontend (Chart.js)
-
-    Note over Worker, API: Background Task
-    Worker->>API: Запрос актуальных курсов
-    API-->>Worker: XML Response
-    Worker->>DB: Запись в exchange_rates
-    Worker->>DB: Запись метаданных (app_meta)
-
-    Note over UI, DB: User View
-    UI->>DB: Запрос данных через API
-    DB-->>UI: History Data
-    UI->>UI: Отрисовка графика
-```
-
-🚀 Quick Start
-Windows PowerShell (через `uv`)
+Шаг 1: Клонирование репозитория командой:
 
 ```powershell
-# Установка зависимостей (создаст .venv)
+git clone https://github.com/<your-username>/currency-tracker-app.git
+cd currency-tracker-app
+```
+
+Шаг 2: Создание файла `.env` и указание в нем необходимых переменных окружения (если используется в вашей конфигурации).
+
+Шаг 3: Установка зависимостей:
+
+```powershell
 uv sync
-
-# Установка фронтенд-зависимостей (Tailwind + FlyonUI)
 npm install
+```
 
-# Сборка CSS в ./static/app.css
+Шаг 4: Запуск проекта:
+
+```powershell
 npm run build:css
-
-# Запуск dev-сервера
 uv run uvicorn app.main:app --reload
 ```
 
-Откройте в браузере `http://127.0.0.1:8000/`.
+После запуска откройте в браузере `http://127.0.0.1:8000/`.
 
-Минимальные API:
+## 5. ФУНКЦИОНАЛЬНЫЕ ВОЗМОЖНОСТИ
 
-- `GET /api/codes` — список валютных кодов, которые есть в базе
-- `GET /api/stats` — сводка “Сегодня” (последняя дата в БД, количество валют, статус синхронизации)
-- `GET /api/favorites` — данные для таблицы “Избранное” (курс, ∆ день, ∆ 7д, спарклайн)
-- `GET /api/rates/{CODE}?days=30` — точки для графика
-- `POST /api/sync` — синхронизировать курсы “на сегодня”
+- Получение актуальных курсов валют из API ЦБ РФ и синхронизация в локальную базу.
+- Построение графика изменений курса выбранной валюты за заданное количество дней.
+- Отображение популярных валют и дневных изменений с удобным интерфейсом.
 
-Миграции:
+## 6. СКРИНШОТ ПРИЛОЖЕНИЯ
 
-- Alembic настроен в `alembic.ini`, миграции лежат в `alembic/versions/`.
-- Для применения миграций: `uv run alembic upgrade head`
+![Скриншот интерфейса Currency Tracker](assets/app-screenshot-day6.png)
