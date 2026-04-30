@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from time import monotonic
 
 from fastapi import APIRouter, HTTPException
@@ -154,9 +154,21 @@ def api_rates(char_code: str, days: int = 30) -> dict:
         return cached[1]
 
     items = get_rates(DB_PATH, char_code=code, days=days)
-    if not items and days > 4:
-        backfill_days(min(days, 14))
-        items = get_rates(DB_PATH, char_code=code, days=days)
+    if days > 1:
+        should_backfill = not items
+        if items:
+            dates = sorted({date.fromisoformat(row.date) for row in items})
+            oldest = dates[0]
+            latest = dates[-1]
+            requested_from = date.today() - timedelta(days=days - 1)
+            # On a fresh device there is often only "today", so proactively backfill history.
+            sparse_history = len(dates) < min(3, days)
+            does_not_cover_range = oldest > (requested_from + timedelta(days=2))
+            stale_tail = (date.today() - latest).days > 2
+            should_backfill = sparse_history or does_not_cover_range or stale_tail
+        if should_backfill:
+            backfill_days(min(max(days, 7), 60))
+            items = get_rates(DB_PATH, char_code=code, days=days)
     if not items:
         raise HTTPException(status_code=404, detail="no data for currency (try /api/sync)")
     response = {
